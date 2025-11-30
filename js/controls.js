@@ -439,4 +439,74 @@ document.addEventListener("DOMContentLoaded", () => {
 			}
 		});
 	}
+
+	/* --- Controle de tamanho de fonte --- */
+
+	const fontSlider = document.getElementById("font-size-slider");
+	const fontDecrease = document.getElementById("font-decrease");
+	const fontIncrease = document.getElementById("font-increase");
+	const fontReset = document.getElementById("font-reset");
+	const fontValue = document.getElementById("font-size-value");
+
+	const TEXT_KEY = "user-text-scale";
+	const MIN_SCALE = 75;
+	const MAX_SCALE = 150;
+	const DEFAULT_SCALE = 100;
+
+	function applyTextScale(percent) {
+		const scale = (percent || DEFAULT_SCALE) / 100;
+		document.documentElement.style.setProperty("--text-scale", scale);
+		if (fontValue) fontValue.textContent = percent + "%";
+		if (fontReset)
+			fontReset.style.display = percent !== DEFAULT_SCALE ? "" : "none";
+	}
+
+	function saveTextScale(percent) {
+		localStorage.setItem(TEXT_KEY, String(percent));
+	}
+
+	// Initialize from localStorage
+	let savedScale = parseInt(localStorage.getItem(TEXT_KEY), 10);
+	if (isNaN(savedScale)) savedScale = DEFAULT_SCALE;
+	applyTextScale(savedScale);
+	if (fontSlider) fontSlider.value = String(savedScale);
+
+	if (fontSlider) {
+		fontSlider.addEventListener("input", (e) => {
+			const v = parseInt(e.target.value, 10);
+			applyTextScale(v);
+		});
+
+		fontSlider.addEventListener("change", (e) => {
+			saveTextScale(parseInt(e.target.value, 10));
+		});
+	}
+
+	if (fontDecrease) {
+		fontDecrease.addEventListener("click", () => {
+			let v = parseInt(fontSlider.value || DEFAULT_SCALE, 10) - 10;
+			if (v < MIN_SCALE) v = MIN_SCALE;
+			fontSlider.value = v;
+			applyTextScale(v);
+			saveTextScale(v);
+		});
+	}
+
+	if (fontIncrease) {
+		fontIncrease.addEventListener("click", () => {
+			let v = parseInt(fontSlider.value || DEFAULT_SCALE, 10) + 10;
+			if (v > MAX_SCALE) v = MAX_SCALE;
+			fontSlider.value = v;
+			applyTextScale(v);
+			saveTextScale(v);
+		});
+	}
+
+	if (fontReset) {
+		fontReset.addEventListener("click", () => {
+			fontSlider.value = DEFAULT_SCALE;
+			applyTextScale(DEFAULT_SCALE);
+			saveTextScale(DEFAULT_SCALE);
+		});
+	}
 });

@@ -111,3 +111,81 @@ button,
 	user-select: none;
 	touch-action: manipulation;
 }
+
+/* Text scale variable (percentage as multiplier on 1rem) */
+:root {
+	--text-scale: 1;
+}
+
+/* Font-size control styles */
+.font-size-control {
+	margin-top: 1rem;
+}
+.font-size-control label {
+	display: block;
+	font-size: 0.95rem;
+	margin-bottom: 0.35rem;
+}
+.font-size-row {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+}
+.font-size-row input[type="range"] {
+	flex: 1 1 auto;
+	min-width: 120px;
+}
+.font-size-value {
+	min-width: 48px;
+	text-align: center;
+	font-weight: 600;
+}
+.font-reset-row {
+	display: flex;
+	justify-content: flex-start;
+}
+
+/* Make control's own label and value scale with --text-scale */
+.font-size-control label,
+.font-size-control .font-size-value {
+	font-size: calc(var(--text-scale) * 1rem);
+}
+
+/* Small icon buttons (half the size of normal icon buttons) */
+.icon.small {
+	width: 24px;
+	height: 24px;
+	border-radius: 0.25rem;
+	padding: 0;
+}
+.icon.small .material-symbols-outlined {
+	font-size: 1rem; /* smaller symbol inside */
+}
+
+/* Apply text scaling to specific elements */
+main p,
+main blockquote,
+main li {
+	font-size: calc(var(--text-scale) * 1rem);
+}
+
+/* Keep example-card content unaffected where possible */
+.example-card p,
+.example-card li,
+.example-card blockquote {
+	font-size: 1rem;
+}
+
+/* Sidebars: only affect li and label */
+.side-content li,
+.side-content label {
+	font-size: calc(var(--text-scale) * 1rem);
+}
+
+/* Dialogs: affect dialog texts */
+.dialog-content p,
+.dialog-content li,
+.dialog-content label,
+.dialog-text {
+	font-size: calc(var(--text-scale) * 1rem);
+}

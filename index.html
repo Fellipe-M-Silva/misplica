@@ -1176,8 +1176,40 @@
 						</radio-group>
 					</fieldset>
 					</div>
+
+						<!-- Controle de tamanho de fonte -->
+						<div class="font-size-control" id="font-size-control">
+							<label for="font-size-slider">Tamanho do texto</label>
+							<div class="sign-wrapper"
+								data-sign-type="dinamico"
+								data-dinamico-name="Mudança de tamanho de texto"
+								data-dinamico-explanation="Interagir com o slider ou com os botões aumenta ou diminui o tamanho do texto."
+								style="flex-direction: column;">
+
+								<div class="font-size-row">
+									<button class="icon secondary small" id="font-decrease" title="Diminuir texto">
+										<span class="material-symbols-outlined">remove</span>
+									</button>
+									<input
+										id="font-size-slider"
+										type="range"
+										min="75"
+										max="150"
+										value="100"
+										step="1"
+									/>
+									<button class="icon secondary small" id="font-increase" title="Aumentar texto">
+										<span class="material-symbols-outlined">add</span>
+									</button>
+									<span class="font-size-value" id="font-size-value">100%</span>
+								</div>
+								<div class="font-reset-row">
+									<button class="primary font-reset" id="font-reset" style="display:none; margin-top:0.5rem;">Redefinir</button>
+								</div>
+							</div>
+						</div>
 				</div>
-			</div>
+				</div>
 		</main>
 
 		<div class="dialog-overlay" id="about-dialog-overlay">
