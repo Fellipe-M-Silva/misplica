@@ -7,13 +7,47 @@ document.addEventListener("DOMContentLoaded", () => {
 
 	// Função para mudar o texto do botão ao passar o mouse
 	const hoverButton = document.getElementById("hover-button");
-	hoverButton.addEventListener("mouseover", () => {
-		hoverButton.textContent = "Você passou o mouse!";
-	});
-	// Função para restaurar o texto do botão ao sair o mouse
-	hoverButton.addEventListener("mouseout", () => {
-		hoverButton.textContent = "Passe o mouse aqui";
-	});
+	// detectar dispositivo móvel (toque)
+	const isTouchDevice =
+		window.matchMedia("(pointer: coarse), (hover: none)").matches ||
+		"ontouchstart" in window;
+
+	if (hoverButton) {
+		if (isTouchDevice) {
+			// texto específico para dispositivos móveis
+			hoverButton.textContent = "Toque e pressione aqui";
+			// implementar toque longo (long-press)
+			const LONG_PRESS_MS = 500;
+			let hoverPressTimer = null;
+			const cancelHoverPress = () => {
+				if (hoverPressTimer) {
+					clearTimeout(hoverPressTimer);
+					hoverPressTimer = null;
+				}
+			};
+
+			hoverButton.addEventListener("pointerdown", (ev) => {
+				// permitir mouse padrão em desktops
+				if (ev.pointerType === "mouse") return;
+				ev.preventDefault();
+				cancelHoverPress();
+				hoverPressTimer = setTimeout(() => {
+					hoverButton.textContent = "Você passou o mouse!";
+				}, LONG_PRESS_MS);
+			});
+			hoverButton.addEventListener("pointerup", cancelHoverPress);
+			hoverButton.addEventListener("pointercancel", cancelHoverPress);
+			hoverButton.addEventListener("pointermove", cancelHoverPress);
+		} else {
+			// comportamento tradicional de hover em desktops
+			hoverButton.addEventListener("mouseover", () => {
+				hoverButton.textContent = "Você passou o mouse!";
+			});
+			hoverButton.addEventListener("mouseout", () => {
+				hoverButton.textContent = "Passe o mouse aqui";
+			});
+		}
+	}
 
 	// Função para alternar o estado do toggle
 	const toggleButton = document.getElementById("toggle-button");
@@ -95,6 +129,12 @@ document.addEventListener("DOMContentLoaded", () => {
 			currentTranslate = { x: centerX, y: centerY };
 			movableObject.style.transform = `translate(${centerX}px, ${centerY}px)`;
 		};
+
+		// ajustar texto do objeto em dispositivos móveis (preservando o ícone)
+		if (isTouchDevice) {
+			// manter o ícone e substituir o texto de instrução
+			movableObject.innerHTML = `<span class="material-symbols-outlined icon">drag_indicator</span>Toque e arraste para mover o objeto`;
+		}
 
 		// aplicar após layout e recalcular em resize
 		requestAnimationFrame(computeAndApplyCenter);
@@ -219,13 +259,43 @@ document.addEventListener("DOMContentLoaded", () => {
 	const tooltipContent = document.getElementById("tooltip-content");
 
 	if (tooltipButton && tooltipContent) {
-		tooltipButton.addEventListener("mouseover", () => {
-			tooltipContent.classList.add("active");
-		});
+		if (isTouchDevice) {
+			// texto e comportamento long-press para mobile
+			tooltipButton.textContent = "Toque e pressione aqui";
+			const LONG_PRESS_MS = 500;
+			let tooltipPressTimer = null;
+			const cancelTooltipPress = () => {
+				if (tooltipPressTimer) {
+					clearTimeout(tooltipPressTimer);
+					tooltipPressTimer = null;
+				}
+			};
 
-		tooltipButton.addEventListener("mouseout", () => {
-			tooltipContent.classList.remove("active");
-		});
+			tooltipButton.addEventListener("pointerdown", (ev) => {
+				if (ev.pointerType === "mouse") return;
+				ev.preventDefault();
+				cancelTooltipPress();
+				tooltipPressTimer = setTimeout(() => {
+					tooltipContent.classList.add("active");
+				}, LONG_PRESS_MS);
+			});
+			tooltipButton.addEventListener("pointerup", (ev) => {
+				cancelTooltipPress();
+				// remover tooltip ao soltar
+				tooltipContent.classList.remove("active");
+			});
+			tooltipButton.addEventListener("pointercancel", cancelTooltipPress);
+			tooltipButton.addEventListener("pointermove", cancelTooltipPress);
+		} else {
+			// comportamento por hover em desktop
+			tooltipButton.addEventListener("mouseover", () => {
+				tooltipContent.classList.add("active");
+			});
+
+			tooltipButton.addEventListener("mouseout", () => {
+				tooltipContent.classList.remove("active");
+			});
+		}
 	} else {
 		console.warn(
 			"Elemento tooltip-button ou tooltip-content não encontrado. Verifique o ID no HTML."
@@ -238,6 +308,10 @@ document.addEventListener("DOMContentLoaded", () => {
 	const closeDialogButton = document.getElementById("close-dialog-button");
 
 	if (dialogButton && dialogButtonDialog) {
+		// ajustar o texto para dispositivos móveis
+		if (isTouchDevice) {
+			dialogButton.textContent = "Toque para abrir";
+		}
 		dialogButton.addEventListener("click", () => {
 			console.log("Abrindo diálogo...");
 			dialogButtonDialog.classList.add("active");
@@ -580,4 +654,22 @@ document.addEventListener("DOMContentLoaded", () => {
 	}
 
 	// fim do DOM
+	// Ajustes específicos para dispositivos móveis: trocar textos pontuais
+	if (isTouchDevice) {
+		// trocar o texto do parágrafo sobre o Raio-X que menciona "Clique no ícone..."
+		const allParagraphs = Array.from(document.querySelectorAll("p"));
+		for (const p of allParagraphs) {
+			if (
+				p.textContent &&
+				p.textContent.includes(
+					"Clique no ícone de interrogação para saber"
+				)
+			) {
+				p.textContent = p.textContent.replace(
+					"Clique no ícone de interrogação para saber",
+					"Toque no ícone de interrogação para saber"
+				);
+			}
+		}
+	}
 });
