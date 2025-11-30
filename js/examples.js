@@ -19,10 +19,15 @@ document.addEventListener("DOMContentLoaded", () => {
 			// implementar toque longo (long-press)
 			const LONG_PRESS_MS = 500;
 			let hoverPressTimer = null;
+			let hoverRevertTimer = null;
 			const cancelHoverPress = () => {
 				if (hoverPressTimer) {
 					clearTimeout(hoverPressTimer);
 					hoverPressTimer = null;
+				}
+				if (hoverRevertTimer) {
+					clearTimeout(hoverRevertTimer);
+					hoverRevertTimer = null;
 				}
 			};
 
@@ -32,7 +37,14 @@ document.addEventListener("DOMContentLoaded", () => {
 				ev.preventDefault();
 				cancelHoverPress();
 				hoverPressTimer = setTimeout(() => {
-					hoverButton.textContent = "Você passou o mouse!";
+					// texto solicitado para toque longo
+					hoverButton.textContent = "Você fez um toque longo!";
+					// reverter ao texto de instrução após 1.5s
+					hoverRevertTimer = setTimeout(() => {
+						hoverButton.textContent = "Toque e pressione aqui";
+						hoverRevertTimer = null;
+					}, 1500);
+					hoverPressTimer = null;
 				}, LONG_PRESS_MS);
 			});
 			hoverButton.addEventListener("pointerup", cancelHoverPress);
@@ -264,11 +276,19 @@ document.addEventListener("DOMContentLoaded", () => {
 			tooltipButton.textContent = "Toque e pressione aqui";
 			const LONG_PRESS_MS = 500;
 			let tooltipPressTimer = null;
+			let tooltipAutoHideTimer = null;
+			let tooltipShownByLongPress = false;
+
 			const cancelTooltipPress = () => {
 				if (tooltipPressTimer) {
 					clearTimeout(tooltipPressTimer);
 					tooltipPressTimer = null;
 				}
+				if (tooltipAutoHideTimer) {
+					clearTimeout(tooltipAutoHideTimer);
+					tooltipAutoHideTimer = null;
+				}
+				tooltipShownByLongPress = false;
 			};
 
 			tooltipButton.addEventListener("pointerdown", (ev) => {
@@ -277,15 +297,29 @@ document.addEventListener("DOMContentLoaded", () => {
 				cancelTooltipPress();
 				tooltipPressTimer = setTimeout(() => {
 					tooltipContent.classList.add("active");
+					tooltipShownByLongPress = true;
+					// auto-hide after 2.5s
+					tooltipAutoHideTimer = setTimeout(() => {
+						tooltipContent.classList.remove("active");
+						tooltipAutoHideTimer = null;
+						tooltipShownByLongPress = false;
+					}, 2500);
+					tooltipPressTimer = null;
 				}, LONG_PRESS_MS);
 			});
 			tooltipButton.addEventListener("pointerup", (ev) => {
-				cancelTooltipPress();
-				// remover tooltip ao soltar
-				tooltipContent.classList.remove("active");
+				// se o long-press ainda não ocorreu, cancelar
+				if (ev.pointerType === "mouse") return;
+				if (tooltipPressTimer) {
+					cancelTooltipPress();
+				}
+				// se já mostrou por long-press, deixamos o auto-hide cuidar do fechamento
 			});
 			tooltipButton.addEventListener("pointercancel", cancelTooltipPress);
-			tooltipButton.addEventListener("pointermove", cancelTooltipPress);
+			tooltipButton.addEventListener("pointermove", (ev) => {
+				// cancelar se o usuário mover o dedo (evita abrir tooltip ao arrastar)
+				if (tooltipPressTimer) cancelTooltipPress();
+			});
 		} else {
 			// comportamento por hover em desktop
 			tooltipButton.addEventListener("mouseover", () => {

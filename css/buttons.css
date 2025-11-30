@@ -98,3 +98,16 @@ button.icon {
 		display: none;
 	}
 }
+
+/* Evita seleção de texto em botões (melhora UX em touch) */
+button,
+.icon,
+.menu-button,
+.primary,
+.secondary {
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+	touch-action: manipulation;
+}
