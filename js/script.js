@@ -153,53 +153,97 @@ document.addEventListener("DOMContentLoaded", () => {
 		});
 	});
 
-	// Função para abrir o modal de Sobre
-	const aboutButton = document.getElementById("open-about-button");
-	const aboutButtonDialog = document.getElementById("about-dialog-content");
-	const aboutButtonOverlay = document.getElementById("about-dialog-overlay");
+	// Generic overlay wiring: pointerdown+click backdrop logic + open/close
+	function wireOverlay(options) {
+		// options: { overlayId, contentSelector (optional), openButtonId (optional), closeButtonSelector (optional) }
+		const overlay = document.getElementById(options.overlayId);
+		if (!overlay) return null;
+		const content = options.contentSelector
+			? overlay.querySelector(options.contentSelector)
+			: overlay.querySelector(".dialog-content");
 
-	aboutButton.addEventListener("click", () => {
-		if (aboutButtonDialog) {
-			aboutButtonDialog.classList.add("active");
-			aboutButtonOverlay.classList.add("active");
-			body.classList.add("no-scroll"); // Prevent scrolling when modal is open
+		// open function
+		function open() {
+			if (content) content.classList.add("active");
+			overlay.classList.add("active");
+			document.body.classList.add("no-scroll");
 		}
-	});
-	// Função para fechar o modal de Sobre
-	const closeAboutButton = document.getElementById("close-about-button");
 
-	closeAboutButton.addEventListener("click", () => {
-		if (aboutButtonDialog) {
-			aboutButtonDialog.classList.remove("active");
-			aboutButtonOverlay.classList.remove("active");
-			body.classList.remove("no-scroll"); // Allow scrolling when modal is closed
+		// close function
+		function close() {
+			if (content) content.classList.remove("active");
+			overlay.classList.remove("active");
+			document.body.classList.remove("no-scroll");
 		}
-	});
 
-	// Função para fechar o modal de Sobre ao clicar fora do conteúdo
-	aboutButtonOverlay.addEventListener("click", (event) => {
-		if (
-			aboutButtonDialog &&
-			aboutButtonDialog.classList.contains("active")
-		) {
-			aboutButtonDialog.classList.remove("active");
-			aboutButtonOverlay.classList.remove("active");
-			body.classList.remove("no-scroll"); // Allow scrolling when modal is closed
-		}
-	});
+		// pointerdown -> remember if started on backdrop
+		let _pointerStartedOnBackdrop = false;
+		overlay.addEventListener("pointerdown", (e) => {
+			_pointerStartedOnBackdrop = e.target === overlay;
+		});
 
-	// Função para fechar o modal de Sobre ao pressionar a tecla Escape
-	document.addEventListener("keydown", (event) => {
-		if (event.key === "Escape") {
-			if (
-				aboutButtonDialog &&
-				aboutButtonDialog.classList.contains("active")
-			) {
-				aboutButtonDialog.classList.remove("active");
-				aboutButtonOverlay.classList.remove("active");
-				body.classList.remove("no-scroll"); // Allow scrolling when modal is closed
+		// click -> only close if pointer started on backdrop
+		overlay.addEventListener("click", (e) => {
+			if (!_pointerStartedOnBackdrop) {
+				_pointerStartedOnBackdrop = false;
+				return;
 			}
+			close();
+			_pointerStartedOnBackdrop = false;
+		});
+
+		// close button inside overlay
+		if (options.closeButtonSelector) {
+			const closeBtn =
+				overlay.querySelector(options.closeButtonSelector) ||
+				document.getElementById(
+					options.closeButtonSelector.replace(/^#/, "")
+				);
+			if (closeBtn) closeBtn.addEventListener("click", close);
 		}
+
+		// open button outside
+		if (options.openButtonId) {
+			const opener = document.getElementById(options.openButtonId);
+			if (opener)
+				opener.addEventListener("click", (e) => {
+					e.preventDefault();
+					open();
+				});
+		}
+
+		return { overlay, open, close };
+	}
+
+	// Wire standard overlays
+	const aboutOverlay = wireOverlay({
+		overlayId: "about-dialog-overlay",
+		contentSelector: "#about-dialog-content",
+		openButtonId: "open-about-button",
+		closeButtonSelector: ".close-dialog#close-about-button",
+	});
+
+	const dialogButtonOverlay = wireOverlay({
+		overlayId: "dialog-button-dialog",
+		contentSelector: ".dialog-content",
+		openButtonId: "dialog-button",
+		closeButtonSelector: ".close-dialog#close-dialog-button",
+	});
+
+	const feedbackOverlay = wireOverlay({
+		overlayId: "feedback-dialog-overlay",
+		contentSelector: ".dialog-content",
+		// no open button id provided here (may be opened elsewhere),
+		closeButtonSelector: ".close-dialog#close-feedback-dialog-button",
+	});
+
+	// Global Escape handler: close any active overlay
+	document.addEventListener("keydown", (event) => {
+		if (event.key !== "Escape") return;
+		[aboutOverlay, dialogButtonOverlay, feedbackOverlay].forEach((o) => {
+			if (!o || !o.overlay) return;
+			if (o.overlay.classList.contains("active")) o.close();
+		});
 	});
 
 	// Seleciona todos os botões que devem ter scroll suave para seções MIS
@@ -233,7 +277,6 @@ document.addEventListener("DOMContentLoaded", () => {
 	});
 
 	// mudar o src da imagem do mis entre temas
-	
 
 	// fechamento do DOMContentLoaded. Não apagar
 });
