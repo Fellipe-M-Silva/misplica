@@ -43,6 +43,7 @@ header > div {
 	justify-content: space-between;
 	align-items: center;
 	padding: 1rem 2rem;
+	gap: 1rem;
 	max-width: 1920px;
 }
 
@@ -54,7 +55,7 @@ section ul,
 section ol {
 	list-style-position: inside;
 	margin-bottom: 1rem;
-	padding-left: 1.5rem;
+	/* padding-left: 1.5rem; */
 }
 
 li {
@@ -328,5 +329,12 @@ fieldset {
 } */
 
 .info-message p {
+	font-size: 1rem;
 	margin: 0;
+}
+
+@media (min-width: 768px) {
+	section ul {
+		padding-left: 1.5rem;
+	}
 }
