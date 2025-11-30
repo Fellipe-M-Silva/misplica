@@ -2,6 +2,11 @@ document.addEventListener("DOMContentLoaded", () => {
 	console.log("DOM totalmente carregado. Iniciando x-ray.js");
 
 	// --- X-Ray Toggle Logic ---
+	// Ensure toggles have accessible pressed state
+	document.querySelectorAll(".x-ray-toggle").forEach((b) => {
+		b.setAttribute("aria-pressed", "false");
+	});
+
 	document.querySelectorAll(".x-ray-toggle").forEach((button) => {
 		console.log("Botão de Raio-X encontrado:", button.id);
 		button.addEventListener("click", () => {
@@ -17,8 +22,23 @@ document.addEventListener("DOMContentLoaded", () => {
 				`x-ray-active-${selectedSignType}`
 			);
 
-			// PASSO 1: Sempre LIMPE o estado anterior COMPLETO.
-			// Remove QUALQUER classe de Raio-X do body.
+			if (isCurrentlyActive) {
+				// Deactivate the currently active lens
+				document.body.classList.remove(
+					`x-ray-active-${selectedSignType}`
+				);
+				clickedButton.classList.remove("active");
+				clickedButton.setAttribute("aria-pressed", "false");
+				// remove indicators and close any explanation modal
+				hideAllXrayIndicators();
+				closeSignExplanationModal();
+				console.log(
+					`Lente '${selectedSignType}' desativada pelo clique.`
+				);
+				return;
+			}
+
+			// Otherwise, activate this lens: first clear previous state
 			document.body.classList.remove(
 				"x-ray-active-estatico",
 				"x-ray-active-dinamico",
@@ -26,44 +46,37 @@ document.addEventListener("DOMContentLoaded", () => {
 			);
 			console.log("Classes 'x-ray-active' removidas do body.");
 
-			// Remove a classe 'active' de *TODOS* os botões do Raio-X.
+			// Remove active state and aria-pressed from all toggles
 			document.querySelectorAll(".x-ray-toggle").forEach((btn) => {
 				btn.classList.remove("active");
+				btn.setAttribute("aria-pressed", "false");
+				btn.setAttribute("aria-expanded", "false");
 			});
 			console.log(
 				"Classe 'active' removida de todos os botões de Raio-X."
 			);
 
-			// Remove TODOS os indicadores e data-xray-active dos elementos
+			// Remove previous indicators
 			hideAllXrayIndicators();
 			console.log(
 				"Indicadores e data-xray-active removidos de todos os elementos."
 			);
 
-			// Fecha o modal de explicação, se estiver aberto
+			// Close any open explanation modal (but do not change active lens state here)
 			closeSignExplanationModal();
-			console.log("Modal de explicação fechado.");
 
-			// PASSO 2: DECIDE o que fazer AGORA com base no clique
-			if (isCurrentlyActive) {
-				// Se a lente clicada ESTAVA ativa, significa que o clique era para DESATIVÁ-LA.
-				console.log(
-					`Lente '${selectedSignType}' estava ativa e foi desativada.`
-				);
-			} else {
-				// Se a lente clicada NÃO ESTAVA ativa, significa que o clique era para ATIVÁ-LA.
-				document.body.classList.add(`x-ray-active-${selectedSignType}`);
-				console.log(
-					`Lente de Raio-X ativada: Adicionado 'x-ray-active-${selectedSignType}' ao body.`
-				);
-				// Chama showXrayIndicators passando o tipo de signo selecionado
-				showXrayIndicators(selectedSignType);
+			// Activate selected lens
+			document.body.classList.add(`x-ray-active-${selectedSignType}`);
+			console.log(
+				`Lente de Raio-X ativada: Adicionado 'x-ray-active-${selectedSignType}' ao body.`
+			);
+			showXrayIndicators(selectedSignType);
 
-				clickedButton.classList.add("active");
-				console.log(
-					`Classe 'active' adicionada ao botão '${clickedButton.id}'.`
-				);
-			}
+			clickedButton.classList.add("active");
+			clickedButton.setAttribute("aria-pressed", "true");
+			console.log(
+				`Classe 'active' adicionada ao botão '${clickedButton.id}'.`
+			);
 		});
 	});
 
@@ -108,6 +121,15 @@ document.addEventListener("DOMContentLoaded", () => {
 			indicator.dataset.signExplanation =
 				element.dataset[`${activeSignType}Explanation`];
 
+			// Accessibility: label and keyboard support
+			const nameLabel = indicator.dataset.signName || "Explicação";
+			indicator.setAttribute(
+				"aria-label",
+				`${nameLabel} — Abrir explicação`
+			);
+			indicator.setAttribute("role", "button");
+			indicator.tabIndex = 0;
+
 			console.log(
 				"Dados do signo adicionados ao indicador:",
 				indicator.dataset.signName,
@@ -145,6 +167,14 @@ document.addEventListener("DOMContentLoaded", () => {
 					indicator.dataset.signExplanation,
 					indicator // Passa o indicador para posicionamento
 				);
+			});
+
+			// Keyboard support: open on Enter or Space
+			indicator.addEventListener("keydown", (ev) => {
+				if (ev.key === "Enter" || ev.key === " ") {
+					ev.preventDefault();
+					indicator.click();
+				}
 			});
 		});
 	}
@@ -325,6 +355,9 @@ document.addEventListener("DOMContentLoaded", () => {
 		signExplanationModalOverlay.style.backgroundColor = "transparent";
 		signExplanationModalOverlay.style.zIndex = "1001";
 
+		// Keep reference to last active toggle to restore focus on modal close
+		let _lastActiveToggle = null;
+
 		signExplanationModalContent.style.position = "static";
 
 		signExplanationModalOverlay.style.display = "flex";
@@ -346,13 +379,8 @@ document.addEventListener("DOMContentLoaded", () => {
 			signExplanationModalOverlay.style.display = "none";
 			console.log("Modal display:none definido após transição.");
 		}, 300);
-
-		// Remove a classe 'active' de TODOS os botões do Raio-X (se ainda não foi removida)
-		document.querySelectorAll(".x-ray-toggle").forEach((btn) => {
-			btn.classList.remove("active");
-		});
-		console.log(
-			"Classe 'active' removida de todos os botões de Raio-X via closeSignExplanationModal."
-		);
+		// NOTE: Do NOT remove the 'active' state from the x-ray-toggle buttons here.
+		// The lens state should persist while the selected lens is active. Closing
+		// the explanation modal must not deactivate the currently selected lens.
 	}
 });
