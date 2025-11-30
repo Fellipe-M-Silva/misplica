@@ -54,65 +54,141 @@ document.addEventListener("DOMContentLoaded", () => {
 		}
 	});
 
-	// Função para mover o objeto dentro da área
+	// Movimentação do objeto dentro da área com limites e retorno automático
 	const movableArea = document.getElementById("movable-area");
 	const movableObject = document.getElementById("movable-object");
-	movableArea.addEventListener("mousedown", (event) => {
-		if (event.target === movableObject) {
-			const offsetX =
-				event.clientX - movableObject.getBoundingClientRect().left;
-			const offsetY =
-				event.clientY - movableObject.getBoundingClientRect().top;
-
-			const moveAt = (pageX, pageY) => {
-				movableObject.style.left = `${pageX - offsetX}px`;
-				movableObject.style.top = `${pageY - offsetY}px`;
-			};
-
-			const onMouseMove = (event) => {
-				moveAt(event.pageX, event.pageY);
-			};
-
-			document.addEventListener("mousemove", onMouseMove);
-
-			document.addEventListener(
-				"mouseup",
-				() => {
-					document.removeEventListener("mousemove", onMouseMove);
-				},
-				{ once: true }
-			);
+	if (movableArea && movableObject) {
+		// garante que área seja contexto posicionado
+		if (getComputedStyle(movableArea).position === "static") {
+			movableArea.style.position = "relative";
 		}
-	});
-	// Função para mover o objeto dentro da área com touch
-	movableArea.addEventListener("touchstart", (event) => {
-		if (event.target === movableObject) {
-			const touch = event.touches[0];
-			const offsetX =
-				touch.clientX - movableObject.getBoundingClientRect().left;
-			const offsetY =
-				touch.clientY - movableObject.getBoundingClientRect().top;
+		movableObject.style.position = "absolute";
+		// Renderizar o objeto no topo-esquerdo (0,0) do container e usar
+		// o centro do container como posição inicial/descanso.
+		// Fazemos isso definindo left/top a 0 e usando transform para
+		// deslocar até o centro; o centro será o ponto de retorno.
+		movableObject.style.left = "0";
+		movableObject.style.top = "0";
+		// calcular o deslocamento necessário para centralizar com precisão
+		// usando bounding rects após o layout (mais robusto que apenas client/offset)
+		let centerX = 0;
+		let centerY = 0;
+		let currentTranslate = { x: 0, y: 0 };
+		movableObject.style.touchAction = "none"; // evitar scroll durante drag em touch
 
-			const moveAt = (pageX, pageY) => {
-				movableObject.style.left = `${pageX - offsetX}px`;
-				movableObject.style.top = `${pageY - offsetY}px`;
-			};
-
-			const onTouchMove = (event) => {
-				moveAt(event.touches[0].pageX, event.touches[0].pageY);
-			};
-
-			document.addEventListener("touchmove", onTouchMove);
-
-			document.addEventListener(
-				"touchend",
-				() => {
-					document.removeEventListener("touchmove", onTouchMove);
-				},
-				{ once: true }
+		const computeAndApplyCenter = () => {
+			// usar medidas internas (client/offset) para calcular o centro do conteúdo
+			const cx = Math.max(
+				0,
+				Math.round(
+					(movableArea.clientWidth - movableObject.offsetWidth) / 2
+				)
 			);
-		}
-	});
+			const cy = Math.max(
+				0,
+				Math.round(
+					(movableArea.clientHeight - movableObject.offsetHeight) / 2
+				)
+			);
+			centerX = cx;
+			centerY = cy;
+			currentTranslate = { x: centerX, y: centerY };
+			movableObject.style.transform = `translate(${centerX}px, ${centerY}px)`;
+		};
+
+		// aplicar após layout e recalcular em resize
+		requestAnimationFrame(computeAndApplyCenter);
+		window.addEventListener("resize", () => {
+			requestAnimationFrame(computeAndApplyCenter);
+		});
+
+		let pointerId = null;
+		let startPointer = { x: 0, y: 0 };
+		let startTranslate = { x: 0, y: 0 };
+		let dragLimits = null;
+		let resetTimer = null;
+		const RESET_DELAY = 3000; // ms
+
+		const clearReset = () => {
+			if (resetTimer) {
+				clearTimeout(resetTimer);
+				resetTimer = null;
+			}
+			movableObject.style.transition = "";
+		};
+
+		const onPointerDown = (ev) => {
+			if (ev.button && ev.button !== 0) return; // apenas botão principal
+			ev.preventDefault();
+			clearReset();
+			pointerId = ev.pointerId;
+			movableObject.setPointerCapture(pointerId);
+			startPointer = { x: ev.clientX, y: ev.clientY };
+			startTranslate = { ...currentTranslate };
+
+			const areaRect = movableArea.getBoundingClientRect();
+			const minX = 0;
+			const minY = 0;
+			// usar client/offset para limites (independe de transform)
+			const maxX = Math.max(
+				0,
+				movableArea.clientWidth - movableObject.offsetWidth
+			);
+			const maxY = Math.max(
+				0,
+				movableArea.clientHeight - movableObject.offsetHeight
+			);
+			// manter centerX/centerY atualizados caso o container mude de tamanho
+			// (usar os mesmos valores calculados mais acima como referência de retorno)
+			// obs: centerX/centerY permanecem válidos enquanto a área não for redimensionada.
+			dragLimits = { minX, minY, maxX, maxY };
+		};
+
+		const onPointerMove = (ev) => {
+			if (pointerId === null || ev.pointerId !== pointerId) return;
+			ev.preventDefault();
+			const dx = ev.clientX - startPointer.x;
+			const dy = ev.clientY - startPointer.y;
+			let nx = startTranslate.x + dx;
+			let ny = startTranslate.y + dy;
+			if (dragLimits) {
+				nx = Math.min(Math.max(nx, dragLimits.minX), dragLimits.maxX);
+				ny = Math.min(Math.max(ny, dragLimits.minY), dragLimits.maxY);
+			}
+			currentTranslate = { x: nx, y: ny };
+			movableObject.style.transform = `translate(${nx}px, ${ny}px)`;
+		};
+
+		const finishPointer = (ev) => {
+			if (pointerId === null) return;
+			try {
+				movableObject.releasePointerCapture(pointerId);
+			} catch (e) {}
+			pointerId = null;
+			// iniciar timer para voltar ao centro (posição de descanso)
+			clearReset();
+			resetTimer = setTimeout(() => {
+				movableObject.style.transition = "transform 360ms ease";
+				movableObject.style.transform = `translate(${centerX}px, ${centerY}px)`;
+				currentTranslate = { x: centerX, y: centerY };
+				const onEnd = () => {
+					movableObject.style.transition = "";
+					movableObject.removeEventListener("transitionend", onEnd);
+				};
+				movableObject.addEventListener("transitionend", onEnd);
+				resetTimer = null;
+			}, RESET_DELAY);
+		};
+
+		movableObject.addEventListener("pointerdown", onPointerDown);
+		window.addEventListener("pointermove", onPointerMove);
+		window.addEventListener("pointerup", finishPointer);
+		window.addEventListener("pointercancel", finishPointer);
+		// se o usuário tocar/clicar novamente, cancelar o retorno e permitir nova interação
+		movableObject.addEventListener("pointerdown", () => clearReset());
+	} else {
+		console.warn("movable-area ou movable-object não encontrados no DOM.");
+	}
 
 	// Função para voltar ao topo da página
 	const backToTopButton = document.getElementById("back-to-top");
