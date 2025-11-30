@@ -173,6 +173,19 @@
 	transform: translateY(0);
 }
 
+/* On small screens remove the movement animation and keep only the fade (opacity)
+   so the modal appears without translate motion which can be awkward on touch devices */
+@media (max-width: 1080px) {
+	.sign-explanation-modal-overlay .dialog-content {
+		transform: none !important;
+		transition: none !important;
+	}
+
+	.sign-explanation-modal-overlay.is-visible .dialog-content {
+		transform: none !important;
+	}
+}
+
 /* --- Estilos para o Chip de Categoria no Modal --- */
 .sign-category-chip {
 	display: inline-block; /* Para que o padding e margin funcionem como bloco */
@@ -201,4 +214,18 @@
 .sign-type-metalinguistico {
 	background-color: var(--color-metalinguistic-shadow);
 	color: var(--color-text-metalinguistic);
+}
+
+/* Normalize indicator transform on small screens and remove transform transition
+   so indicators only fade in (no movement). */
+@media (max-width: 1080px) {
+	.sign-wrapper > .x-ray-indicator {
+		transform: translateX(-50%) !important;
+		transition: opacity 0.3s ease !important;
+	}
+
+	.x-ray-indicator.position-right,
+	.x-ray-indicator.position-left {
+		transform: translateX(-50%) !important;
+	}
 }
