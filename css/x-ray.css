@@ -121,6 +121,16 @@
 		top: -35px;
 		transform: translateX(-50%);
 	}
+
+	/* For sign-wrappers inside the header on small screens, show indicators below
+	   so they are reachable by touch. */
+	header .sign-wrapper > .x-ray-indicator.position-right,
+	header .sign-wrapper > .x-ray-indicator.position-left {
+		left: 50%;
+		right: auto;
+		top: calc(100% + 0.5rem);
+		transform: translateX(-50%);
+	}
 }
 
 /* --- Modal --- */

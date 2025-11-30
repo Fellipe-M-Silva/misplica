@@ -283,6 +283,11 @@ img {
 }
 
 @media (min-width: 1081px) {
+	/* Hide elements that are mobile-only (and their wrappers) on large screens */
+	.mobile-only {
+		display: none !important;
+	}
+
 	/* Ajuste para desktop: conteúdo principal se move quando o sumário está ativo */
 	#mobile-navigation-header {
 		display: none;

@@ -20,9 +20,14 @@
 	<body>
 		<header>
 			<div>
-				<button class="icon secondary" id="open-summary-button">
-					<span class="material-symbols-outlined">menu</span>
-				</button>
+				<div class="sign-wrapper mobile-only"
+					data-sign-type="dinamico"
+					data-dinamico-name="Abrir sumário"
+					data-dinamico-explanation="O botão, que aparece em resposta a tamanhos de tela menores, abre o painel do sumário.">
+					<button class="icon secondary" id="open-summary-button">
+						<span class="material-symbols-outlined">menu</span>
+					</button>
+				</div>
 				<h3 style="flex: 1">MISplica</h3>
 				<div class="actions">
 					<div
@@ -39,10 +44,15 @@
 					<span class="material-symbols-outlined">help</span>
 				</button>
 			</div>
-		</div>
-		<button class="icon secondary" id="open-controls-button">
-			<span class="material-symbols-outlined">settings</span>
-		</button>
+				</div>
+				<div class="sign-wrapper mobile-only"
+					data-sign-type="dinamico"
+					data-dinamico-name="Abrir controles"
+					data-dinamico-explanation="O botão, que aparece em resposta a tamanhos de tela menores, abre o painel de controles do MISplica.">
+					<button class="icon secondary" id="open-controls-button">
+						<span class="material-symbols-outlined">settings</span>
+					</button>
+				</div>
 			</div>
 			<!-- <div id="mobile-navigation-header">
 				<button class="icon ghost" id="open-summary-button">
