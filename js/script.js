@@ -117,6 +117,67 @@ document.addEventListener("DOMContentLoaded", () => {
 		observer.observe(section);
 	});
 
+	// Robust fallback: update active summary item based on scroll position.
+	// This complements IntersectionObserver and handles edge cases where
+	// long sections or dynamic header heights break the observer.
+	const summaryLinksMap = new Map();
+	allNavLinks.forEach((link) => {
+		const href = link.getAttribute("href");
+		if (href && href.startsWith("#")) {
+			summaryLinksMap.set(href.substring(1), link);
+		}
+	});
+
+	function getSectionTop(section) {
+		return section.getBoundingClientRect().top + window.scrollY;
+	}
+
+	let ticking = false;
+	function updateActiveByScroll() {
+		const headerOffset = getHeaderOffsetHeight();
+		const position = window.scrollY + headerOffset + 5; // small buffer
+		let activeId = null;
+		for (let i = 0; i < sections.length; i++) {
+			const sec = sections[i];
+			const top = getSectionTop(sec);
+			const bottom = top + sec.offsetHeight;
+			if (position >= top && position < bottom) {
+				activeId = sec.id;
+				break;
+			}
+		}
+
+		// If no section matched (e.g., scrolled past last), pick last
+		if (!activeId && sections.length) {
+			const last = sections[sections.length - 1];
+			if (
+				window.scrollY + window.innerHeight >=
+				document.body.scrollHeight - 20
+			) {
+				activeId = last.id;
+			}
+		}
+
+		// Toggle classes
+		allNavLinks.forEach((l) => l.classList.remove("active-section"));
+		if (activeId && summaryLinksMap.has(activeId)) {
+			summaryLinksMap.get(activeId).classList.add("active-section");
+		}
+		ticking = false;
+	}
+
+	window.addEventListener("scroll", () => {
+		if (!ticking) {
+			window.requestAnimationFrame(() => updateActiveByScroll());
+			ticking = true;
+		}
+	});
+
+	window.addEventListener("resize", () => updateActiveByScroll());
+
+	// Run once on load
+	updateActiveByScroll();
+
 	const verExemplosButtons = document.querySelectorAll(".sign-card .primary");
 
 	verExemplosButtons.forEach((button) => {
