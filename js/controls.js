@@ -358,8 +358,11 @@ document.addEventListener("DOMContentLoaded", () => {
 		}
 		// abrir o painel de controles
 		controlsSidebar.classList.add("open");
-		if (openControlsButton)
+		if (openControlsButton) {
 			openControlsButton.setAttribute("aria-expanded", "true");
+			// trocar o ícone do botão para 'close' quando o painel estiver aberto
+			if (controlsIconSpan) controlsIconSpan.textContent = "close";
+		}
 		controlsOverlay = createOverlayWithId("controls-overlay");
 		requestAnimationFrame(() => controlsOverlay.classList.add("visible"));
 		controlsOverlay.addEventListener("click", closeControls, {
