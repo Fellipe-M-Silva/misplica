@@ -19,13 +19,15 @@ document.addEventListener("DOMContentLoaded", () => {
 		let actualThemeToApply = theme; // This will be the theme stored in localStorage
 
 		if (theme === "default") {
-			// If "default" is chosen, determine the actual theme from system preference
-			body.removeAttribute("data-theme"); // Remove attribute to revert to system preference
-			// No need to explicitly set data-theme="light" or "dark" here,
-			// as removing the attribute will make CSS use prefers-color-scheme.
-			// We'll update the radio buttons based on the *system's* current state.
+			// Follow system: mark that we're following system and mirror current system value
+			body.dataset.followSystem = "true";
+			const system = getSystemTheme();
+			// Mirror system preference explicitly so the UI updates immediately and
+			// we can control updates uniformly across browsers.
+			body.setAttribute("data-theme", system);
 		} else {
-			// For 'light' or 'dark' explicit selections
+			// For 'light' or 'dark' explicit selections: stop following system
+			delete body.dataset.followSystem;
 			body.setAttribute("data-theme", theme);
 		}
 
@@ -80,17 +82,16 @@ document.addEventListener("DOMContentLoaded", () => {
 	loadThemePreference();
 
 	// Listen for system preference changes (if theme is 'default' in localStorage)
-	// This listener ensures that if the user's system theme changes while 'default'
-	// is selected, your site's theme will also update.
-	window
-		.matchMedia("(prefers-color-scheme: dark)")
-		.addEventListener("change", () => {
-			if (localStorage.getItem("user-theme") === "default") {
-				// If the user's saved preference is "default", re-apply it
-				// to ensure the UI updates according to the new system preference.
-				applyTheme("default");
-			}
-		});
+	// If the user selected 'default', keep mirroring the system by updating
+	// the mirrored data-theme value.
+	const prefersDarkMQ = window.matchMedia("(prefers-color-scheme: dark)");
+	prefersDarkMQ.addEventListener("change", (e) => {
+		if (localStorage.getItem("user-theme") === "default") {
+			const system = e.matches ? "dark" : "light";
+			// Mirror new system preference
+			body.setAttribute("data-theme", system);
+		}
+	});
 
 	/* --- Toggle do Sumário em telas pequenas (menu lateral) --- */
 
