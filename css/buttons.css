@@ -92,7 +92,7 @@ button.icon {
 	color: red; /* You might define a danger-color in colors.css or choose another */
 }
 
-@media screen and (min-width: 768px) {
+@media screen and (min-width: 1080px) {
 	#open-summary-button,
 	#open-controls-button {
 		display: none;

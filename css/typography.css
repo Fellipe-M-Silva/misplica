@@ -70,6 +70,10 @@ section h5 {
 	margin-bottom: 1rem;
 }
 
+.side-content h4 {
+	margin-bottom: 1.5rem;
+}
+
 p {
 	font-size: 1.2rem;
 	margin-bottom: 1.5rem;
@@ -142,5 +146,9 @@ li {
 	li {
 		font-size: 1rem;
 		line-height: 1.75;
+	}
+
+	.side-content h4 {
+		margin-bottom: 1.5rem;
 	}
 }

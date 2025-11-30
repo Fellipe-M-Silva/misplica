@@ -180,17 +180,14 @@ img {
 }
 
 /* Media Queries para Responsividade */
-@media (max-width: 768px) {
+/* Ajustado: breakpoint para comportamento mobile agora é 1080px */
+@media (max-width: 1080px) {
 	.content {
 		padding: 2rem;
 	}
 
 	/* Em telas pequenas, o painel de controles fica oculto,
 	   o sumário vira um menu lateral que aparece com transição */
-
-	.controls {
-		display: none;
-	}
 
 	.summary {
 		position: fixed;
@@ -232,16 +229,52 @@ img {
 		visibility: visible;
 	}
 
-	h1 {
-		font-size: 2em;
+	/* Controles como menu lateral à direita em mobile */
+
+	.controls {
+		position: fixed;
+		top: 0;
+		right: 0;
+		left: auto;
+		height: 100vh;
+		width: 80%;
+		max-width: 320px;
+		background-color: var(--color-background);
+		padding: 1.5rem;
+		box-shadow: -2px 0 12px rgba(0, 0, 0, 0.2);
+		transform: translateX(110%);
+		transition: transform 0.28s ease;
+		z-index: 40;
+		overflow-y: auto;
 	}
 
-	h2 {
-		font-size: 1.75em;
+	.controls.open {
+		transform: translateX(0);
 	}
 
-	h3 {
-		font-size: 1.5em;
+	/* Ajuste de tipografia para dispositivos móveis reais (touch)
+	   Usamos condições extras (pointer/hover) para evitar aplicar
+	   em janelas pequenas de desktop quando o usuário redimensiona.
+	*/
+
+	@media (pointer: coarse), (hover: none) {
+		h1 {
+			font-size: 2em;
+		}
+
+		h2 {
+			font-size: 1.75em;
+		}
+
+		h3 {
+			font-size: 1.5em;
+		}
+
+		/* Aumentar ligeiramente o tamanho dos parágrafos em dispositivos móveis */
+		p {
+			font-size: 1.05rem;
+			line-height: 1.6;
+		}
 	}
 
 	.wrapper {
@@ -249,7 +282,7 @@ img {
 	}
 }
 
-@media (min-width: 769px) {
+@media (min-width: 1081px) {
 	/* Ajuste para desktop: conteúdo principal se move quando o sumário está ativo */
 	#mobile-navigation-header {
 		display: none;
@@ -262,13 +295,13 @@ img {
 		flex: 1;
 		align-self: flex-start;
 		position: sticky;
-		top: 6rem;
+		top: 5.5rem;
 	}
 
 	.summary,
 	.controls {
 		position: sticky;
-		top: calc(5rem + 1px);
+		/* top: calc(5rem + 1px); */
 		background-color: var(--color-background);
 		display: flex;
 		flex-direction: column;

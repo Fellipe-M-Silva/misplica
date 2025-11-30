@@ -102,17 +102,19 @@ document.addEventListener("DOMContentLoaded", () => {
 		: null;
 	let summaryOverlay = null;
 
-	const createOverlay = () => {
-		if (document.getElementById("summary-overlay"))
-			return document.getElementById("summary-overlay");
+	const createOverlayWithId = (id) => {
+		if (document.getElementById(id)) return document.getElementById(id);
 		const o = document.createElement("div");
-		o.id = "summary-overlay";
-		o.className = "summary-overlay";
+		o.id = id;
+		o.className = "summary-overlay"; // reuse same visual style
 		document.body.appendChild(o);
 		return o;
 	};
 
 	const openSummary = () => {
+		// fechar controles se estiverem abertos (não permitir ambos)
+		if (controlsSidebar && controlsSidebar.classList.contains("open"))
+			closeControls();
 		// ajustar padding-top para não ficar embaixo do header
 		if (headerEl && summarySidebar) {
 			const headerHeight = headerEl.offsetHeight || 0;
@@ -122,14 +124,58 @@ document.addEventListener("DOMContentLoaded", () => {
 					getComputedStyle(document.documentElement).fontSize
 				) || 16;
 			const extra = rootFontSize; // 1rem em pixels
+		}
+		// aplicar padding-top imediatamente (para que o conteúdo interno já fique posicionado)
+		if (headerEl && summarySidebar) {
+			const headerHeight = headerEl.offsetHeight || 0;
+			const rootFontSize =
+				parseFloat(
+					getComputedStyle(document.documentElement).fontSize
+				) || 16;
+			const extra = rootFontSize; // 1rem em pixels
 			summarySidebar.style.paddingTop = headerHeight + extra + "px";
 		}
+		// abrir o sidebar (adiciona classe para rodar a transição)
 		summarySidebar.classList.add("open");
+		// abrir o sidebar (adiciona classe primeiro para rodar a transição)
+		summarySidebar.classList.add("open");
+		// após a transição de abertura, aplicar o padding-top para evitar
+		// que a alteração seja visível antes da animação
+		if (headerEl && summarySidebar) {
+			const onOpenTransition = (ev) => {
+				if (ev.propertyName !== "transform") return;
+				const headerHeight = headerEl.offsetHeight || 0;
+				const rootFontSize =
+					parseFloat(
+						getComputedStyle(document.documentElement).fontSize
+					) || 16;
+				const extra = rootFontSize; // 1rem em pixels
+				summarySidebar.style.paddingTop = headerHeight + extra + "px";
+				summarySidebar.removeEventListener(
+					"transitionend",
+					onOpenTransition
+				);
+			};
+			summarySidebar.addEventListener("transitionend", onOpenTransition);
+			// fallback: se transitionend não disparar (browsers antigos), aplica após 300ms
+			setTimeout(() => {
+				if (!summarySidebar.style.paddingTop) {
+					const headerHeight = headerEl.offsetHeight || 0;
+					const rootFontSize =
+						parseFloat(
+							getComputedStyle(document.documentElement).fontSize
+						) || 16;
+					const extra = rootFontSize;
+					summarySidebar.style.paddingTop =
+						headerHeight + extra + "px";
+				}
+			}, 320);
+		}
 		// trocar o ícone do botão para 'close'
 		if (menuIconSpan) menuIconSpan.textContent = "close";
 		if (openSummaryButton)
 			openSummaryButton.setAttribute("aria-expanded", "true");
-		summaryOverlay = createOverlay();
+		summaryOverlay = createOverlayWithId("summary-overlay");
 		// small delay to allow transition of visibility
 		requestAnimationFrame(() => summaryOverlay.classList.add("visible"));
 		// close when clicking overlay
@@ -142,7 +188,47 @@ document.addEventListener("DOMContentLoaded", () => {
 		if (!summarySidebar) return;
 		summarySidebar.classList.remove("open");
 		// restaurar padding-top (remover inline style)
-		if (summarySidebar) summarySidebar.style.paddingTop = "";
+		// remover classe para iniciar a transição de fechamento
+		summarySidebar.classList.remove("open");
+		// remover o padding só após a transição terminar (evitar salto visível)
+		if (summarySidebar) {
+			const onCloseTransition = (ev) => {
+				if (ev.propertyName !== "transform") return;
+				summarySidebar.style.paddingTop = "";
+				summarySidebar.removeEventListener(
+					"transitionend",
+					onCloseTransition
+				);
+			};
+			summarySidebar.addEventListener("transitionend", onCloseTransition);
+			// fallback
+			setTimeout(() => {
+				if (summarySidebar && summarySidebar.style.paddingTop)
+					summarySidebar.style.paddingTop = "";
+			}, 320);
+		}
+		// iniciar transição de fechamento
+		summarySidebar.classList.remove("open");
+		// remover o padding só após a transição terminar (evitar salto visível)
+		if (summarySidebar) {
+			const onCloseTransition = (ev) => {
+				if (ev.propertyName !== "transform") return;
+				// aguarda pequeno delay após a transição para garantir que saiu da tela
+				setTimeout(() => {
+					summarySidebar.style.paddingTop = "";
+				}, 120);
+				summarySidebar.removeEventListener(
+					"transitionend",
+					onCloseTransition
+				);
+			};
+			summarySidebar.addEventListener("transitionend", onCloseTransition);
+			// fallback
+			setTimeout(() => {
+				if (summarySidebar && summarySidebar.style.paddingTop)
+					summarySidebar.style.paddingTop = "";
+			}, 520);
+		}
 		// trocar o ícone de volta para 'menu'
 		if (menuIconSpan) menuIconSpan.textContent = "menu";
 		if (openSummaryButton)
@@ -162,7 +248,7 @@ document.addEventListener("DOMContentLoaded", () => {
 	if (openSummaryButton && summarySidebar) {
 		openSummaryButton.addEventListener("click", (e) => {
 			// Only toggle in small viewports; on desktop the sidebar is visible by layout
-			if (window.matchMedia("(max-width: 768px)").matches) {
+			if (window.matchMedia("(max-width: 1080px)").matches) {
 				if (summarySidebar.classList.contains("open")) {
 					closeSummary();
 				} else {
@@ -172,20 +258,19 @@ document.addEventListener("DOMContentLoaded", () => {
 		});
 	}
 
-	// Close on Escape
+	// Close on Escape (summary or controls)
 	document.addEventListener("keydown", (ev) => {
-		if (
-			ev.key === "Escape" &&
-			summarySidebar &&
-			summarySidebar.classList.contains("open")
-		) {
-			closeSummary();
+		if (ev.key === "Escape") {
+			if (summarySidebar && summarySidebar.classList.contains("open"))
+				closeSummary();
+			if (controlsSidebar && controlsSidebar.classList.contains("open"))
+				closeControls();
 		}
 	});
 
 	// Garantir que o estado é resetado ao redimensionar para desktop
 	window.addEventListener("resize", () => {
-		if (window.matchMedia("(min-width: 769px)").matches) {
+		if (window.matchMedia("(min-width: 1081px)").matches) {
 			if (summarySidebar && summarySidebar.classList.contains("open")) {
 				summarySidebar.classList.remove("open");
 			}
@@ -194,7 +279,163 @@ document.addEventListener("DOMContentLoaded", () => {
 					summaryOverlay.parentNode.removeChild(summaryOverlay);
 				summaryOverlay = null;
 			}
+			if (controlsSidebar && controlsSidebar.classList.contains("open")) {
+				controlsSidebar.classList.remove("open");
+			}
+			if (controlsOverlay) {
+				if (controlsOverlay.parentNode)
+					controlsOverlay.parentNode.removeChild(controlsOverlay);
+				controlsOverlay = null;
+			}
 			document.body.style.overflow = "";
 		}
 	});
+
+	/* --- Toggle do painel de Controles (menu lateral pela direita) --- */
+
+	const openControlsButton = document.getElementById("open-controls-button");
+	const controlsSidebar = document.getElementById("controls-sidebar");
+	const controlsIconSpan = openControlsButton
+		? openControlsButton.querySelector(".material-symbols-outlined")
+		: null;
+	let controlsOverlay = null;
+
+	const openControls = () => {
+		// fechar sumário se estiver aberto
+		if (summarySidebar && summarySidebar.classList.contains("open"))
+			closeSummary();
+		// ajustar padding-top para não ficar embaixo do header
+		if (headerEl && controlsSidebar) {
+			const headerHeight = headerEl.offsetHeight || 0;
+			const rootFontSize =
+				parseFloat(
+					getComputedStyle(document.documentElement).fontSize
+				) || 16;
+			const extra = rootFontSize; // 1rem
+		}
+		controlsSidebar.classList.add("open");
+		// abrir o painel de controles e só aplicar padding após transição
+		controlsSidebar.classList.add("open");
+		if (headerEl && controlsSidebar) {
+			const onOpenTransition = (ev) => {
+				if (ev.propertyName !== "transform") return;
+				const headerHeight = headerEl.offsetHeight || 0;
+				const rootFontSize =
+					parseFloat(
+						getComputedStyle(document.documentElement).fontSize
+					) || 16;
+				const extra = rootFontSize; // 1rem
+				controlsSidebar.style.paddingTop = headerHeight + extra + "px";
+				controlsSidebar.removeEventListener(
+					"transitionend",
+					onOpenTransition
+				);
+			};
+			controlsSidebar.addEventListener("transitionend", onOpenTransition);
+			setTimeout(() => {
+				if (!controlsSidebar.style.paddingTop) {
+					const headerHeight = headerEl.offsetHeight || 0;
+					const rootFontSize =
+						parseFloat(
+							getComputedStyle(document.documentElement).fontSize
+						) || 16;
+					const extra = rootFontSize;
+					controlsSidebar.style.paddingTop =
+						headerHeight + extra + "px";
+				}
+			}, 320);
+		}
+		// aplicar padding-top imediatamente para que o conteúdo interno fique posicionado
+		if (headerEl && controlsSidebar) {
+			const headerHeight = headerEl.offsetHeight || 0;
+			const rootFontSize =
+				parseFloat(
+					getComputedStyle(document.documentElement).fontSize
+				) || 16;
+			const extra = rootFontSize; // 1rem
+			controlsSidebar.style.paddingTop = headerHeight + extra + "px";
+		}
+		// abrir o painel de controles
+		controlsSidebar.classList.add("open");
+		if (openControlsButton)
+			openControlsButton.setAttribute("aria-expanded", "true");
+		controlsOverlay = createOverlayWithId("controls-overlay");
+		requestAnimationFrame(() => controlsOverlay.classList.add("visible"));
+		controlsOverlay.addEventListener("click", closeControls, {
+			once: true,
+		});
+		document.body.style.overflow = "hidden";
+	};
+
+	const closeControls = () => {
+		if (!controlsSidebar) return;
+		controlsSidebar.classList.remove("open");
+		if (controlsSidebar) controlsSidebar.style.paddingTop = "";
+		if (controlsSidebar) {
+			const onCloseTransition = (ev) => {
+				if (ev.propertyName !== "transform") return;
+				controlsSidebar.style.paddingTop = "";
+				controlsSidebar.removeEventListener(
+					"transitionend",
+					onCloseTransition
+				);
+			};
+			controlsSidebar.addEventListener(
+				"transitionend",
+				onCloseTransition
+			);
+			setTimeout(() => {
+				if (controlsSidebar && controlsSidebar.style.paddingTop)
+					controlsSidebar.style.paddingTop = "";
+			}, 320);
+		}
+		// iniciar transição de fechamento
+		controlsSidebar.classList.remove("open");
+		// remover padding após o painel ter saído da tela (pequeno delay)
+		if (controlsSidebar) {
+			const onCloseTransition = (ev) => {
+				if (ev.propertyName !== "transform") return;
+				setTimeout(() => {
+					controlsSidebar.style.paddingTop = "";
+				}, 120);
+				controlsSidebar.removeEventListener(
+					"transitionend",
+					onCloseTransition
+				);
+			};
+			controlsSidebar.addEventListener(
+				"transitionend",
+				onCloseTransition
+			);
+			// fallback
+			setTimeout(() => {
+				if (controlsSidebar && controlsSidebar.style.paddingTop)
+					controlsSidebar.style.paddingTop = "";
+			}, 520);
+		}
+		if (controlsIconSpan) controlsIconSpan.textContent = "settings";
+		if (openControlsButton)
+			openControlsButton.setAttribute("aria-expanded", "false");
+		if (controlsOverlay) {
+			controlsOverlay.classList.remove("visible");
+			setTimeout(() => {
+				if (controlsOverlay && controlsOverlay.parentNode)
+					controlsOverlay.parentNode.removeChild(controlsOverlay);
+				controlsOverlay = null;
+			}, 220);
+		}
+		document.body.style.overflow = "";
+	};
+
+	if (openControlsButton && controlsSidebar) {
+		openControlsButton.addEventListener("click", () => {
+			if (window.matchMedia("(max-width: 1080px)").matches) {
+				if (controlsSidebar.classList.contains("open")) {
+					closeControls();
+				} else {
+					openControls();
+				}
+			}
+		});
+	}
 });
