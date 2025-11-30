@@ -91,4 +91,110 @@ document.addEventListener("DOMContentLoaded", () => {
 				applyTheme("default");
 			}
 		});
+
+	/* --- Toggle do Sumário em telas pequenas (menu lateral) --- */
+
+	const openSummaryButton = document.getElementById("open-summary-button");
+	const summarySidebar = document.getElementById("summary-sidebar");
+	const headerEl = document.querySelector("header");
+	const menuIconSpan = openSummaryButton
+		? openSummaryButton.querySelector(".material-symbols-outlined")
+		: null;
+	let summaryOverlay = null;
+
+	const createOverlay = () => {
+		if (document.getElementById("summary-overlay"))
+			return document.getElementById("summary-overlay");
+		const o = document.createElement("div");
+		o.id = "summary-overlay";
+		o.className = "summary-overlay";
+		document.body.appendChild(o);
+		return o;
+	};
+
+	const openSummary = () => {
+		// ajustar padding-top para não ficar embaixo do header
+		if (headerEl && summarySidebar) {
+			const headerHeight = headerEl.offsetHeight || 0;
+			// adiciona 1rem extra para afastar o conteúdo do header
+			const rootFontSize =
+				parseFloat(
+					getComputedStyle(document.documentElement).fontSize
+				) || 16;
+			const extra = rootFontSize; // 1rem em pixels
+			summarySidebar.style.paddingTop = headerHeight + extra + "px";
+		}
+		summarySidebar.classList.add("open");
+		// trocar o ícone do botão para 'close'
+		if (menuIconSpan) menuIconSpan.textContent = "close";
+		if (openSummaryButton)
+			openSummaryButton.setAttribute("aria-expanded", "true");
+		summaryOverlay = createOverlay();
+		// small delay to allow transition of visibility
+		requestAnimationFrame(() => summaryOverlay.classList.add("visible"));
+		// close when clicking overlay
+		summaryOverlay.addEventListener("click", closeSummary, { once: true });
+		// prevent body scroll while open
+		document.body.style.overflow = "hidden";
+	};
+
+	const closeSummary = () => {
+		if (!summarySidebar) return;
+		summarySidebar.classList.remove("open");
+		// restaurar padding-top (remover inline style)
+		if (summarySidebar) summarySidebar.style.paddingTop = "";
+		// trocar o ícone de volta para 'menu'
+		if (menuIconSpan) menuIconSpan.textContent = "menu";
+		if (openSummaryButton)
+			openSummaryButton.setAttribute("aria-expanded", "false");
+		if (summaryOverlay) {
+			summaryOverlay.classList.remove("visible");
+			// remove after transition
+			setTimeout(() => {
+				if (summaryOverlay && summaryOverlay.parentNode)
+					summaryOverlay.parentNode.removeChild(summaryOverlay);
+				summaryOverlay = null;
+			}, 220);
+		}
+		document.body.style.overflow = "";
+	};
+
+	if (openSummaryButton && summarySidebar) {
+		openSummaryButton.addEventListener("click", (e) => {
+			// Only toggle in small viewports; on desktop the sidebar is visible by layout
+			if (window.matchMedia("(max-width: 768px)").matches) {
+				if (summarySidebar.classList.contains("open")) {
+					closeSummary();
+				} else {
+					openSummary();
+				}
+			}
+		});
+	}
+
+	// Close on Escape
+	document.addEventListener("keydown", (ev) => {
+		if (
+			ev.key === "Escape" &&
+			summarySidebar &&
+			summarySidebar.classList.contains("open")
+		) {
+			closeSummary();
+		}
+	});
+
+	// Garantir que o estado é resetado ao redimensionar para desktop
+	window.addEventListener("resize", () => {
+		if (window.matchMedia("(min-width: 769px)").matches) {
+			if (summarySidebar && summarySidebar.classList.contains("open")) {
+				summarySidebar.classList.remove("open");
+			}
+			if (summaryOverlay) {
+				if (summaryOverlay.parentNode)
+					summaryOverlay.parentNode.removeChild(summaryOverlay);
+				summaryOverlay = null;
+			}
+			document.body.style.overflow = "";
+		}
+	});
 });

@@ -185,9 +185,51 @@ img {
 		padding: 2rem;
 	}
 
-	.summary,
+	/* Em telas pequenas, o painel de controles fica oculto,
+	   o sumário vira um menu lateral que aparece com transição */
+
 	.controls {
 		display: none;
+	}
+
+	.summary {
+		position: fixed;
+		top: 0;
+		left: 0;
+		height: 100vh;
+		width: 80%;
+		max-width: 320px;
+		background-color: var(--color-background);
+		padding: 1.5rem;
+		box-shadow: 2px 0 12px rgba(0, 0, 0, 0.2);
+		transform: translateX(-110%);
+		transition: transform 0.28s ease;
+		z-index: 40;
+		overflow-y: auto;
+	}
+
+	.summary.open {
+		transform: translateX(0);
+	}
+
+	/* Overlay que aparece quando o sumário está aberto */
+
+	.summary-overlay {
+		position: fixed;
+		top: 0;
+		left: 0;
+		width: 100vw;
+		height: 100vh;
+		background: rgba(0, 0, 0, 0.35);
+		opacity: 0;
+		visibility: hidden;
+		transition: opacity 0.2s ease, visibility 0.2s ease;
+		z-index: 30;
+	}
+
+	.summary-overlay.visible {
+		opacity: 1;
+		visibility: visible;
 	}
 
 	h1 {
